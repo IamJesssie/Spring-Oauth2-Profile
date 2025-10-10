@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        .login-button { display: inline-block; padding: 10px 20px; margin: 10px; border-radius: 5px; color: white; text-decoration: none; }
+        .google { background-color: #DB4437; }
+        .github { background-color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Welcome</h1>
+    <p>Please log in to continue.</p>
+    <div>
+        <a href="/oauth2/authorization/google" class="login-button google">Login with Google</a>
+        <a href="/oauth2/authorization/github" class="login-button github">Login with GitHub</a>
+    </div>
+</body>
+</html>
