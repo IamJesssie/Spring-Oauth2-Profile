@@ -24,7 +24,7 @@ public class User {
     private String bio;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore  
+    @JsonIgnore  // Prevent circular reference when serializing to JSON
     private Set<AuthProvider> authProviders;
 
     @Column(updatable = false)
