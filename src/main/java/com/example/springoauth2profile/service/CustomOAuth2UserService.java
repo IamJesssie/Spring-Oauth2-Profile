@@ -1,5 +1,10 @@
-package com.example.springoauth2profile;
+package com.example.springoauth2profile.service;
 
+import com.example.springoauth2profile.model.AuthProvider;
+import com.example.springoauth2profile.model.Provider;
+import com.example.springoauth2profile.model.User;
+import com.example.springoauth2profile.repository.AuthProviderRepository;
+import com.example.springoauth2profile.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

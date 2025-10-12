@@ -1,5 +1,6 @@
-package com.example.springoauth2profile;
+package com.example.springoauth2profile.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -23,6 +24,7 @@ public class User {
     private String bio;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore  // Prevent circular reference when serializing to JSON
     private Set<AuthProvider> authProviders;
 
     @Column(updatable = false)

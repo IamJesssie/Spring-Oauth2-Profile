@@ -1,5 +1,6 @@
-package com.example.springoauth2profile;
+package com.example.springoauth2profile.config;
 
+import com.example.springoauth2profile.service.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,7 +35,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> {
                     logger.info("Configuring authorization rules");
                     authorize
-                            .requestMatchers("/", "/error", "/webjars/**", "/h2-console/**", "/debug/**").permitAll()
+                            .requestMatchers("/", "/error", "/webjars/**", "/h2-console/**", "/debug/**", "/test-oauth").permitAll()
                             .anyRequest().authenticated();
                 })
                 .oauth2Login(oauth2 -> {
@@ -45,7 +46,16 @@ public class SecurityConfig {
                                 userInfo.userService(customOAuth2UserService);
                                 userInfo.oidcUserService(customOidcUserService());
                             })
-                            .defaultSuccessUrl("/profile", true);
+                            .defaultSuccessUrl("/profile/view", true);
+                })
+                .logout(logout -> {
+                    logger.info("Configuring logout functionality");
+                    logout
+                            .logoutUrl("/logout")
+                            .logoutSuccessUrl("/")
+                            .invalidateHttpSession(true)
+                            .clearAuthentication(true)
+                            .deleteCookies("JSESSIONID");
                 })
                 .csrf(csrf -> {
                     logger.info("Configuring CSRF settings");

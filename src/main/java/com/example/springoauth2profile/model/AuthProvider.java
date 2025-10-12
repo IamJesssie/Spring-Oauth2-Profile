@@ -1,4 +1,4 @@
-package com.example.springoauth2profile;
+package com.example.springoauth2profile.model;
 
 import jakarta.persistence.*;
 
