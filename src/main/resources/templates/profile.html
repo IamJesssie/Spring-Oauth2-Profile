@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>User Profile</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -25,16 +23,16 @@
                     </div>
                     <div class="card-body text-center">
                         <!-- User Avatar -->
-                        <img id="userAvatar" 
-                             src="https://via.placeholder.com/100x100?text=User"
+                        <img th:src="${user.avatarUrl != null ? user.avatarUrl : 'https://via.placeholder.com/100x100?text=User'}" 
                              class="rounded-circle mb-3"
                              style="width: 100px; height: 100px; object-fit: cover;"
+                             alt="User Avatar"
                              onerror="this.src='https://via.placeholder.com/100x100?text=User'">
                         <!-- User Info -->
-                        <h4 id="displayName">Loading...</h4>
-                        <p class="text-muted" id="userEmail">loading@example.com</p>
+                        <h4 th:text="${user.displayName != null and user.displayName != '' ? user.displayName : 'No Name'}">Display Name</h4>
+                        <p class="text-muted" th:text="${user.email}">user@example.com</p>
                         <small class="text-muted">
-                            Member since: <span id="memberSince">...</span>
+                            Member since: <span th:text="${#temporals.format(user.createdAt, 'MMMM yyyy')}">January 2024</span>
                         </small>
                     </div>
                 </div>
@@ -45,45 +43,45 @@
                         <h5><i class="bi bi-pencil-square"></i> Edit Profile</h5>
                     </div>
                     <div class="card-body">
-                        <!-- Success Message -->
-                        <div id="successAlert" class="alert alert-success alert-dismissible fade show d-none" role="alert">
-                            <i class="bi bi-check-circle"></i> <span id="successMessage">Profile updated successfully!</span>
+                        <!-- Success Message (from flash attributes) -->
+                        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}">Success!</span>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
 
-                        <!-- Error Message -->
-                        <div id="errorAlert" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
-                            <i class="bi bi-exclamation-triangle"></i> <span id="errorMessage">Error updating profile.</span>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-
-                        <form id="profileForm" onsubmit="updateProfile(event)">
+                        <!-- Traditional Form with POST -->
+                        <form method="POST" action="/profile">
+                            <!-- CSRF Token (required by Spring Security) -->
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            
                             <div class="mb-3">
-                                <label for="displayNameInput" class="form-label">Display Name</label>
+                                <label for="displayName" class="form-label">Display Name</label>
                                 <input type="text"
                                        class="form-control"
-                                       id="displayNameInput"
+                                       id="displayName"
                                        name="displayName"
+                                       th:value="${user.displayName}"
                                        placeholder="Enter your display name"
                                        required>
                                 <div class="form-text">This is the name that will be displayed to other users.</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="bioInput" class="form-label">Bio</label>
+                                <label for="bio" class="form-label">Bio</label>
                                 <textarea class="form-control"
-                                          id="bioInput"
+                                          id="bio"
                                           name="bio"
                                           rows="4"
+                                          th:text="${user.bio}"
                                           placeholder="Tell us about yourself..."></textarea>
                                 <div class="form-text">Brief description about yourself (optional).</div>
                             </div>
 
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="submit" id="updateButton" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-check-lg"></i> Update Profile
                                 </button>
-                                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                <button type="reset" class="btn btn-secondary">
                                     <i class="bi bi-arrow-clockwise"></i> Reset
                                 </button>
                             </div>
@@ -102,7 +100,7 @@
                                 <strong>Email:</strong>
                             </div>
                             <div class="col-sm-9">
-                                <span id="accountEmail">loading@example.com</span>
+                                <span th:text="${user.email}">user@example.com</span>
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -110,7 +108,7 @@
                                 <strong>Account Created:</strong>
                             </div>
                             <div class="col-sm-9">
-                                <span id="accountCreated">...</span>
+                                <span th:text="${#temporals.format(user.createdAt, 'MMM dd, yyyy hh:mm a')}">Jan 01, 2024 12:00 PM</span>
                             </div>
                         </div>
                         <div class="row">
@@ -118,7 +116,7 @@
                                 <strong>Last Updated:</strong>
                             </div>
                             <div class="col-sm-9">
-                                <span id="accountUpdated">...</span>
+                                <span th:text="${#temporals.format(user.updatedAt, 'MMM dd, yyyy hh:mm a')}">Jan 01, 2024 12:00 PM</span>
                             </div>
                         </div>
                     </div>
@@ -129,212 +127,5 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        // Load user data on page load - using multiple event listeners for reliability
-        console.log('Script loaded!');
-        
-        // Store original user data for comparison and reset
-        let originalUserData = {
-            displayName: '',
-            bio: ''
-        };
-        
-        // Try DOMContentLoaded first (fastest)
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('DOMContentLoaded fired, fetching user data...');
-                loadUserData();
-                setupFormListeners();
-            });
-        } else {
-            // DOM already loaded, call immediately
-            console.log('DOM already loaded, fetching user data immediately...');
-            loadUserData();
-            setupFormListeners();
-        }
-
-        function setupFormListeners() {
-            // Listen for changes in form fields
-            const displayNameInput = document.getElementById('displayNameInput');
-            const bioInput = document.getElementById('bioInput');
-            const updateButton = document.getElementById('updateButton');
-            
-            displayNameInput.addEventListener('input', checkForChanges);
-            bioInput.addEventListener('input', checkForChanges);
-            
-            // Disable update button initially
-            updateButton.disabled = true;
-        }
-
-        function checkForChanges() {
-            const displayNameInput = document.getElementById('displayNameInput');
-            const bioInput = document.getElementById('bioInput');
-            const updateButton = document.getElementById('updateButton');
-            
-            const currentDisplayName = displayNameInput.value || '';
-            const currentBio = bioInput.value || '';
-            
-            // Check if anything changed
-            const hasChanges = 
-                currentDisplayName !== originalUserData.displayName ||
-                currentBio !== originalUserData.bio;
-            
-            updateButton.disabled = !hasChanges;
-            
-            if (!hasChanges && updateButton.disabled) {
-                console.log('No changes detected - button disabled');
-            } else {
-                console.log('Changes detected - button enabled');
-            }
-        }
-
-        function loadUserData() {
-            console.log('loadUserData() called - Starting fetch to /profile');
-            fetch('/profile', {
-                 credentials: 'same-origin',
-                 headers: {
-                     'Content-Type': 'application/json'
-                 },
-                 cache: 'no-cache'  // Prevent caching issues
-             })
-                .then(response => {
-                    console.log('Response received:', response.status, response.statusText);
-                    if (!response.ok) {
-                        throw new Error('HTTP error! status: ' + response.status);
-                    }
-                    return response.json();
-                })
-                .then(user => {
-                    console.log('User data received:', user);
-                    
-                    // Store original data for comparison and reset
-                    originalUserData = {
-                        displayName: user.displayName || '',
-                        bio: user.bio || ''
-                    };
-                    
-                    // Update avatar
-                    if (user.avatarUrl) {
-                        document.getElementById('userAvatar').src = user.avatarUrl;
-                    }
-                    
-                    // Update user info
-                    document.getElementById('displayName').textContent = user.displayName || 'No Name';
-                    document.getElementById('userEmail').textContent = user.email;
-                    document.getElementById('accountEmail').textContent = user.email;
-                    
-                    // Update form fields
-                    document.getElementById('displayNameInput').value = originalUserData.displayName;
-                    document.getElementById('bioInput').value = originalUserData.bio;
-                    
-                    // Format dates
-                    if (user.createdAt) {
-                        const created = new Date(user.createdAt);
-                        document.getElementById('memberSince').textContent = created.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                        document.getElementById('accountCreated').textContent = created.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    }
-                    
-                    if (user.updatedAt) {
-                        const updated = new Date(user.updatedAt);
-                        document.getElementById('accountUpdated').textContent = updated.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    }
-                    
-                    // Reset button state after loading
-                    checkForChanges();
-                })
-                .catch(error => {
-                    console.error('Error loading user data:', error);
-                    showError('Failed to load user data: ' + error.message);
-                });
-        }
-
-        function resetForm() {
-            console.log('Resetting form to original data...');
-            
-            // Reload data from server to get latest
-            loadUserData();
-            
-            // Show info message
-            showInfo('Form reset to saved profile data');
-        }
-
-        function updateProfile(event) {
-            event.preventDefault();
-            
-            // Check if there are any changes
-            const displayNameInput = document.getElementById('displayNameInput');
-            const bioInput = document.getElementById('bioInput');
-            const updateButton = document.getElementById('updateButton');
-            
-            if (updateButton.disabled) {
-                showWarning('Please make some changes before updating your profile');
-                return;
-            }
-            
-            const formData = {
-                displayName: displayNameInput.value,
-                bio: bioInput.value
-            };
-            
-            // Get CSRF token from meta tags
-            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
-            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-            
-            console.log('Updating profile with CSRF token:', csrfToken);
-            
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            headers[csrfHeader] = csrfToken;
-            
-            fetch('/profile', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: headers,
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(user => {
-                console.log('Profile updated:', user);
-                showSuccess('Profile updated successfully!');
-                loadUserData(); // Reload to get fresh data and reset form state
-            })
-            .catch(error => {
-                console.error('Error updating profile:', error);
-                showError('Failed to update profile');
-            });
-        }
-
-        function showSuccess(message) {
-            document.getElementById('successMessage').textContent = message;
-            document.getElementById('successAlert').classList.remove('d-none');
-            document.getElementById('errorAlert').classList.add('d-none');
-            setTimeout(() => {
-                document.getElementById('successAlert').classList.add('d-none');
-            }, 5000);
-        }
-
-        function showError(message) {
-            document.getElementById('errorMessage').textContent = message;
-            document.getElementById('errorAlert').classList.remove('d-none');
-            document.getElementById('successAlert').classList.add('d-none');
-        }
-
-        function showWarning(message) {
-            // Use error alert but with warning styling
-            showError(message);
-        }
-
-        function showInfo(message) {
-            // Use success alert for info
-            showSuccess(message);
-        }
-    </script>
 </body>
 </html>

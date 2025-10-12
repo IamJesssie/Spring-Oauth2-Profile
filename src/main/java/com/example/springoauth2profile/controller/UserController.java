@@ -6,11 +6,14 @@ import com.example.springoauth2profile.repository.UserRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -23,11 +26,14 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
+    /**
+     * GET /profile - View own profile (authenticated)
+     * Returns HTML page with profile form
+     */
     @GetMapping({"/profile", "/profile/"})
-    @ResponseBody
-    public User profile(@AuthenticationPrincipal OAuth2User principal) {
+    public String profile(Model model, @AuthenticationPrincipal OAuth2User principal) {
         System.out.println("============================================");
-        System.out.println("🔍 /profile endpoint called!");
+        System.out.println("🔍 GET /profile endpoint called!");
         System.out.println("🔍 Principal: " + (principal != null ? principal.getName() : "NULL"));
         
         if (principal == null) {
@@ -43,7 +49,10 @@ public class UserController {
         
         System.out.println("✅ User found: " + user.getEmail());
         System.out.println("============================================");
-        return user;
+        
+        
+        model.addAttribute("user", user);
+        return "profile"; 
     }
 
     @GetMapping("/debug/users")
@@ -62,12 +71,16 @@ public class UserController {
         return sb.toString();
     }
 
+    /**
+     * POST /profile - Update displayName and bio (authenticated)
+     * Accepts form data and redirects back to /profile
+     */
     @PostMapping("/profile")
-    @ResponseBody
-    public User updateProfile(@AuthenticationPrincipal OAuth2User principal,
-                            @RequestBody ProfileUpdateRequest request) {
+    public String updateProfile(@AuthenticationPrincipal OAuth2User principal,
+                               @ModelAttribute ProfileUpdateRequest request,
+                               RedirectAttributes redirectAttributes) {
         System.out.println("============================================");
-        System.out.println("📝 UPDATE PROFILE called!");
+        System.out.println("📝 POST /profile called!");
         System.out.println("📝 Request - Display Name: " + request.getDisplayName());
         System.out.println("📝 Request - Bio: " + request.getBio());
         
@@ -80,8 +93,10 @@ public class UserController {
         System.out.println("📝 BEFORE update - Display Name: " + user.getDisplayName());
         System.out.println("📝 BEFORE update - Bio: " + user.getBio());
         
+        // Update user fields
         user.setDisplayName(request.getDisplayName());
         user.setBio(request.getBio());
+        user.setUpdatedAt(LocalDateTime.now());
         
         System.out.println("📝 AFTER setters - Display Name: " + user.getDisplayName());
         System.out.println("📝 AFTER setters - Bio: " + user.getBio());
@@ -94,13 +109,11 @@ public class UserController {
         System.out.println("✅ Profile update completed!");
         System.out.println("============================================");
         
-        return savedUser;
-    }
-
-    // HTML Profile Page (for web browsers)
-    @GetMapping("/profile/view")
-    public String profileView() {
-        return "profile";  // Changed from "profile-new" to "profile"
+        // Add success message
+        redirectAttributes.addFlashAttribute("successMessage", "Profile updated successfully!");
+        
+        // Redirect back to profile page (PRG pattern)
+        return "redirect:/profile";
     }
 
     @GetMapping("/test-oauth")

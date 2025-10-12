@@ -2,14 +2,14 @@
 
 ## 📋 Project Overview
 
-A Spring Boot application implementing OAuth2 authentication with GitHub and Google providers, featuring a complete user profile management system with modern web interface.
+A Spring Boot application implementing OAuth2 authentication with GitHub and Google providers, featuring a traditional server-side rendered user profile management system.
 
 **Due Date:** October 15, 2025 11:59 PM
 **Final Submission:** October 16, 2025 11:59 PM
 
 ## 🎯 Project Goal
 
-Build a new Spring Boot application that integrates OAuth2 login with GitHub and Google and exposes a minimal user profile module.
+Build a new Spring Boot application that integrates OAuth2 login with GitHub and Google and exposes a minimal user profile module with traditional form-based updates.
 
 ## ✅ Scope & Required Features
 
@@ -18,14 +18,15 @@ Build a new Spring Boot application that integrates OAuth2 login with GitHub and
 - ✅ **Login using GitHub OAuth2** - Subsequent logins map to existing user
 - ✅ **Registration using Google OAuth2** - First login creates user record
 - ✅ **Login using Google OAuth2** - Subsequent logins map to existing user
-- ✅ **User Profile Management** - View and edit profile functionality
+- ✅ **User Profile Management** - View and edit profile with traditional form submission
 
 ### **🏗️ Architecture Constraints**
 - ✅ **Backend: Spring Boot with Spring Security** 
 - ✅ **OAuth2 Client Integration**
 - ✅ **JPA Implementation** 
 - ✅ **Database: H2** 
-- ✅ **Session-based Security** 
+- ✅ **Session-based Security**
+- ✅ **Server-Side Rendering with Thymeleaf** 
 
 ## 📊 Suggested Domain Model
 
@@ -58,10 +59,171 @@ AuthProvider (
 | Endpoint | Method | Description | Status |
 |----------|--------|-------------|--------|
 | `GET /` | - | Home with 'Login with Google / GitHub' buttons | ✅ **Implemented** |
-| `GET /profile` | GET | View own profile (authenticated) - JSON API | ✅ **Implemented** |
-| `POST /profile` | POST | Update displayName, bio (authenticated) | ✅ **Implemented** |
+| `GET /profile` | GET | View own profile with editable form (authenticated) | ✅ **Implemented** |
+| `POST /profile` | POST | Update displayName, bio via form submission (authenticated) | ✅ **Implemented** |
 | `GET /logout` | GET | Logout and redirect to home | ✅ **Implemented** |
-| `GET /profile/view` | GET | HTML profile page with edit form | ✅ **Implemented** |
+
+## 🏗️ Architecture Overview
+
+### **System Architecture Diagram**
+
+```mermaid
+graph TB
+    subgraph "Client Browser"
+        A[User]
+    end
+    
+    subgraph "Spring Boot Application"
+        B[Home Page /]
+        C[Spring Security]
+        D[OAuth2 Client]
+        E[UserController]
+        F[CustomOAuth2UserService]
+        G[Thymeleaf Engine]
+    end
+    
+    subgraph "External OAuth2 Providers"
+        H[GitHub OAuth2]
+        I[Google OAuth2]
+    end
+    
+    subgraph "Database Layer"
+        J[(H2 Database)]
+        K[UserRepository]
+        L[AuthProviderRepository]
+    end
+    
+    A -->|1. Visit /| B
+    B -->|2. Click Login| C
+    C -->|3. Redirect to OAuth2| D
+    D -->|4. Authorize| H
+    D -->|4. Authorize| I
+    H -->|5. Return Code| D
+    I -->|5. Return Code| D
+    D -->|6. Exchange Token| H
+    D -->|6. Exchange Token| I
+    D -->|7. User Info| F
+    F -->|8. Save User| K
+    F -->|9. Save Provider| L
+    K --> J
+    L --> J
+    C -->|10. Redirect /profile| E
+    E -->|11. Load User Data| K
+    K -->|12. User Object| E
+    E -->|13. Render Template| G
+    G -->|14. HTML Response| A
+    A -->|15. Submit Form| E
+    E -->|16. Update User| K
+    K -->|17. Save| J
+    E -->|18. Redirect| E
+```
+
+### **Authentication Flow Sequence**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant SpringSecurity
+    participant OAuth2Provider
+    participant CustomService
+    participant Database
+    
+    User->>Browser: Visit home page (/)
+    Browser->>SpringSecurity: Request /
+    SpringSecurity->>Browser: Show Login Options
+    
+    User->>Browser: Click "Login with GitHub/Google"
+    Browser->>SpringSecurity: Initiate OAuth2
+    SpringSecurity->>OAuth2Provider: Redirect to authorization
+    
+    OAuth2Provider->>User: Request permissions
+    User->>OAuth2Provider: Grant permissions
+    OAuth2Provider->>SpringSecurity: Return authorization code
+    
+    SpringSecurity->>OAuth2Provider: Exchange code for token
+    OAuth2Provider->>SpringSecurity: Access token + User info
+    
+    SpringSecurity->>CustomService: Process OAuth2 user
+    CustomService->>Database: Check if user exists
+    
+    alt First time login
+        CustomService->>Database: Create User record
+        CustomService->>Database: Create AuthProvider record
+    else Existing user
+        CustomService->>Database: Find existing User
+    end
+    
+    CustomService->>SpringSecurity: User authenticated
+    SpringSecurity->>Browser: Redirect to /profile
+    Browser->>User: Show profile page
+```
+
+### **Profile Update Flow**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant Controller
+    participant Thymeleaf
+    participant Database
+    
+    User->>Browser: Visit /profile
+    Browser->>Controller: GET /profile
+    Controller->>Database: Find user by email
+    Database->>Controller: User object
+    Controller->>Thymeleaf: Render with user data
+    Thymeleaf->>Browser: HTML form with values
+    Browser->>User: Display profile form
+    
+    User->>Browser: Edit displayName/bio
+    User->>Browser: Click "Update Profile"
+    Browser->>Controller: POST /profile (form data)
+    Controller->>Database: Update user record
+    Database->>Controller: Save successful
+    Controller->>Browser: Redirect to /profile (PRG pattern)
+    Browser->>Controller: GET /profile
+    Controller->>Database: Find updated user
+    Database->>Controller: User object
+    Controller->>Thymeleaf: Render with success message
+    Thymeleaf->>Browser: HTML with updated data
+    Browser->>User: Show success message
+```
+
+### **Technology Stack**
+
+```mermaid
+graph LR
+    subgraph "Presentation Layer"
+        A[Thymeleaf Templates]
+        B[Bootstrap 5.3.0]
+        C[HTML5 Forms]
+    end
+    
+    subgraph "Application Layer"
+        D[Spring Boot 3.5.6]
+        E[Spring Security]
+        F[Spring MVC]
+        G[OAuth2 Client]
+    end
+    
+    subgraph "Data Layer"
+        H[Spring Data JPA]
+        I[Hibernate]
+        J[H2 Database]
+    end
+    
+    A --> D
+    B --> A
+    C --> F
+    D --> E
+    D --> F
+    E --> G
+    F --> H
+    H --> I
+    I --> J
+```
 
 ## 🏆 Project Milestones - 100% COMPLETE
 
@@ -147,7 +309,7 @@ spring.security.oauth2.client.registration.github.client-secret=YOUR_GITHUB_CLIE
 4. **Access the application:**
 - **Home Page:** http://localhost:8080/
 - **H2 Database Console:** http://localhost:8080/h2-console
-- **Profile Management:** http://localhost:8080/profile/view
+- **Profile Management:** http://localhost:8080/profile (requires login)
 
 ## 🔐 Authentication Flow
 
@@ -168,38 +330,85 @@ spring.security.oauth2.client.registration.github.client-secret=YOUR_GITHUB_CLIE
 
 ## 🎨 User Interface Features
 
-### **Profile Management**
+### **Profile Management Page**
 - **👤 Avatar Display** - GitHub/Google profile pictures
-- **📝 Editable Profile** - Display name and bio editing
+- **📝 Traditional Form** - Server-side rendered profile editing
 - **📅 Member Since** - Account creation date display
-- **🔄 Real-time Updates** - Form validation and change detection
-- **💾 Auto-save** - Profile updates persist to database
+- **✅ Flash Messages** - Success feedback after updates
+- **💾 Form Submission** - Traditional POST with page reload (PRG pattern)
+- **� Reset Button** - Native HTML form reset
 - **🚪 Secure Logout** - Session cleanup and home redirect
 
-### **Responsive Design**
-- **📱 Mobile-friendly** - Bootstrap responsive layout
-- **🎯 Modern Styling** - Clean, professional appearance
-- **⚡ Fast Loading** - Optimized JavaScript and CSS
-- **♿ Accessible** - Proper semantic HTML
+### **Design Principles**
+- **📱 Responsive Design** - Bootstrap responsive layout
+- **🎯 Server-Side Rendering** - Thymeleaf template engine
+- **🔒 CSRF Protection** - Hidden token in forms
+- **⚡ Simple & Fast** - No JavaScript dependencies
+- **♿ Accessible** - Proper semantic HTML and form controls
+
+## 🏗️ System Architecture Details
+
+### **Controller Layer**
+```java
+@Controller
+public class UserController {
+    // GET /profile - Returns HTML with user data pre-filled
+    @GetMapping("/profile")
+    public String profile(Model model, OAuth2User principal)
+    
+    // POST /profile - Accepts form data and redirects
+    @PostMapping("/profile")
+    public String updateProfile(
+        @ModelAttribute ProfileUpdateRequest request,
+        RedirectAttributes redirectAttributes)
+}
+```
+
+### **Template Layer (Thymeleaf)**
+```html
+<!-- profile.html -->
+<form method="POST" action="/profile">
+    <input type="hidden" th:name="${_csrf.parameterName}" 
+           th:value="${_csrf.token}"/>
+    <input type="text" name="displayName" 
+           th:value="${user.displayName}"/>
+    <textarea name="bio" th:text="${user.bio}"></textarea>
+    <button type="submit">Update Profile</button>
+</form>
+```
+
+### **Request Flow Pattern**
+1. **GET /profile** → Controller loads user → Thymeleaf renders HTML → Browser displays form
+2. **POST /profile** → Controller updates database → Redirects to GET /profile
+3. **GET /profile** → Controller loads updated user → Shows success message
+
+This follows the **Post-Redirect-Get (PRG)** pattern to prevent duplicate form submissions.
 
 ## 🏗️ System Architecture
 
 ### **Technology Stack**
 - **Backend:** Spring Boot 3.5.6 with Spring Security
 - **Database:** H2 with JPA/Hibernate
-- **Frontend:** Pure HTML/CSS/JavaScript with Bootstrap 5.3.0
-- **Security:** OAuth2 Client with Session Management
+- **Template Engine:** Thymeleaf (Server-Side Rendering)
+- **Frontend:** HTML5 + Bootstrap 5.3.0 (No JavaScript required)
+- **Security:** OAuth2 Client with Session Management + CSRF Protection
 
 ### **Package Structure**
 ```
 src/main/java/com/example/springoauth2profile/
-├── config/           # SecurityConfig.java
-├── controller/       # UserController.java
-├── dto/             # ProfileUpdateRequest.java
+├── config/           # SecurityConfig.java - OAuth2 & Security configuration
+├── controller/       # UserController.java - Profile endpoints
+├── dto/             # ProfileUpdateRequest.java - Form binding
 ├── model/           # User.java, AuthProvider.java, Provider.java
 ├── repository/      # UserRepository.java, AuthProviderRepository.java
-└── service/         # CustomOAuth2UserService.java
+└── service/         # CustomOAuth2UserService.java - User provisioning
+
+src/main/resources/
+├── templates/       # profile.html, error.html - Thymeleaf templates
+├── static/         # index.html - Home page
+└── application.properties - Configuration
 ```
+
 
 ## 🗄️ Database Schema
 
@@ -240,17 +449,18 @@ CREATE TABLE auth_providers (
 5. Check user data appears in H2 console
 
 ### **Profile Management Testing**
-1. Access http://localhost:8080/profile/view
-2. Verify user data displays correctly
-3. Edit display name and bio
-4. Submit form and verify database updates
-5. Test logout functionality
-
-### **Database Verification**
-1. Access H2 Console: http://localhost:8080/h2-console
-2. Query `USER` table - verify user records
-3. Query `AUTH_PROVIDERS` table - verify provider links
-4. Verify data persistence across sessions
+1. Access http://localhost:8080/profile (requires login)
+2. Verify user data displays correctly (name, email, bio, avatar)
+3. Edit display name and bio fields
+4. Click "Update Profile" button
+5. Verify success message appears after page reload
+6. Check H2 console to confirm database updates
+7. Click "Reset" button to revert form changes
+8. Test logout functionality
 
 
-*Built with ❤️ using Spring Boot, OAuth2, and modern web technologies*
+
+
+
+
+

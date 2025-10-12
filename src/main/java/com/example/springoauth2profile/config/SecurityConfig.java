@@ -46,7 +46,7 @@ public class SecurityConfig {
                                 userInfo.userService(customOAuth2UserService);
                                 userInfo.oidcUserService(customOidcUserService());
                             })
-                            .defaultSuccessUrl("/profile/view", true);
+                            .defaultSuccessUrl("/profile", true);
                 })
                 .logout(logout -> {
                     logger.info("Configuring logout functionality");
