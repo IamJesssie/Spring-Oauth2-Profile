@@ -2,7 +2,7 @@
 
 ## 📋 Project Overview
 
-A Spring Boot application implementing OAuth2 authentication with GitHub and Google providers, featuring a traditional server-side rendered user profile management system.
+A Spring Boot application implementing OAuth2 authentication with GitHub and Google providers, featuring a modern web interface with pure HTML/CSS/JavaScript frontend.
 
 **Due Date:** October 15, 2025 11:59 PM
 **Final Submission:** October 16, 2025 11:59 PM
@@ -26,7 +26,6 @@ Build a new Spring Boot application that integrates OAuth2 login with GitHub and
 - ✅ **JPA Implementation** 
 - ✅ **Database: H2** 
 - ✅ **Session-based Security**
-- ✅ **Server-Side Rendering with Thymeleaf** 
 
 ## 📊 Suggested Domain Model
 
@@ -79,7 +78,6 @@ graph TB
         D[OAuth2 Client]
         E[UserController]
         F[CustomOAuth2UserService]
-        G[Thymeleaf Engine]
     end
     
     subgraph "External OAuth2 Providers"
@@ -110,8 +108,7 @@ graph TB
     C -->|10. Redirect /profile| E
     E -->|11. Load User Data| K
     K -->|12. User Object| E
-    E -->|13. Render Template| G
-    G -->|14. HTML Response| A
+    E -->|13. Return HTML| B
     A -->|15. Submit Form| E
     E -->|16. Update User| K
     K -->|17. Save| J
@@ -166,15 +163,13 @@ sequenceDiagram
     participant User
     participant Browser
     participant Controller
-    participant Thymeleaf
     participant Database
-    
+
     User->>Browser: Visit /profile
     Browser->>Controller: GET /profile
     Controller->>Database: Find user by email
     Database->>Controller: User object
-    Controller->>Thymeleaf: Render with user data
-    Thymeleaf->>Browser: HTML form with values
+    Controller->>Browser: Return HTML with user data
     Browser->>User: Display profile form
     
     User->>Browser: Edit displayName/bio
@@ -186,8 +181,7 @@ sequenceDiagram
     Browser->>Controller: GET /profile
     Controller->>Database: Find updated user
     Database->>Controller: User object
-    Controller->>Thymeleaf: Render with success message
-    Thymeleaf->>Browser: HTML with updated data
+    Controller->>Browser: Return HTML with success message
     Browser->>User: Show success message
 ```
 
@@ -196,9 +190,9 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph "Presentation Layer"
-        A[Thymeleaf Templates]
+        A[Pure HTML/CSS/JavaScript]
         B[Bootstrap 5.3.0]
-        C[HTML5 Forms]
+        C[Static Forms]
     end
     
     subgraph "Application Layer"
@@ -341,9 +335,9 @@ spring.security.oauth2.client.registration.github.client-secret=YOUR_GITHUB_CLIE
 
 ### **Design Principles**
 - **📱 Responsive Design** - Bootstrap responsive layout
-- **🎯 Server-Side Rendering** - Thymeleaf template engine
+- **🎯 Static HTML Generation** - Server-rendered pages
 - **🔒 CSRF Protection** - Hidden token in forms
-- **⚡ Simple & Fast** - No JavaScript dependencies
+- **⚡ Simple & Fast** - Minimal JavaScript dependencies
 - **♿ Accessible** - Proper semantic HTML and form controls
 
 ## 🏗️ System Architecture Details
@@ -364,21 +358,19 @@ public class UserController {
 }
 ```
 
-### **Template Layer (Thymeleaf)**
+### **Frontend Layer (Pure HTML/CSS/JavaScript)**
 ```html
 <!-- profile.html -->
 <form method="POST" action="/profile">
-    <input type="hidden" th:name="${_csrf.parameterName}" 
-           th:value="${_csrf.token}"/>
-    <input type="text" name="displayName" 
-           th:value="${user.displayName}"/>
-    <textarea name="bio" th:text="${user.bio}"></textarea>
+    <input type="hidden" name="_csrf" value="${csrfToken}"/>
+    <input type="text" name="displayName" value="${user.displayName}"/>
+    <textarea name="bio">${user.bio}</textarea>
     <button type="submit">Update Profile</button>
 </form>
 ```
 
 ### **Request Flow Pattern**
-1. **GET /profile** → Controller loads user → Thymeleaf renders HTML → Browser displays form
+1. **GET /profile** → Controller loads user → Returns HTML → Browser displays form
 2. **POST /profile** → Controller updates database → Redirects to GET /profile
 3. **GET /profile** → Controller loads updated user → Shows success message
 
@@ -389,8 +381,7 @@ This follows the **Post-Redirect-Get (PRG)** pattern to prevent duplicate form s
 ### **Technology Stack**
 - **Backend:** Spring Boot 3.5.6 with Spring Security
 - **Database:** H2 with JPA/Hibernate
-- **Template Engine:** Thymeleaf (Server-Side Rendering)
-- **Frontend:** HTML5 + Bootstrap 5.3.0 (No JavaScript required)
+- **Frontend:** Pure HTML/CSS/JavaScript + Bootstrap 5.3.0
 - **Security:** OAuth2 Client with Session Management + CSRF Protection
 
 ### **Package Structure**
@@ -404,8 +395,8 @@ src/main/java/com/example/springoauth2profile/
 └── service/         # CustomOAuth2UserService.java - User provisioning
 
 src/main/resources/
-├── templates/       # profile.html, error.html - Thymeleaf templates
-├── static/         # index.html - Home page
+├── templates/       # profile.html, error.html - HTML templates
+├── static/         # index.html, CSS, JS - Frontend assets
 └── application.properties - Configuration
 ```
 
